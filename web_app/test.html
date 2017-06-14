@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>HistomicsML-Kaplan Meier Survival Curve Grapher</title>
+
+
+		<link rel="stylesheet" media="screen" href="css/bootstrap.min.css"/>
+		<link rel="stylesheet" media="screen" href="css/style.css"/>
+        <link rel="stylesheet" media="screen" href="css/main.css"/>
+
+        <script src="js/jquery-1.9.0.min.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script type="text/javascript" src="js/d3.v3.min.js" charset="utf-8"></script>
+
+	</head>
+	<body>
+		<nav class="navbar navbar-default" role="navigation">
+			<div class="navbar-header">
+				<!-- Don't use the name as a link -->
+				<div class="navbar-brand">HistomicsML</div>
+			</div>
+			<div>
+				<ul class="nav navbar-nav">   <!-- Don't allow movement for now -->
+					<li  class="active"><a href="#">Kaplan Meier Graph</a></li>
+				</ul>
+			</div>
+		</nav><!-- navigation bar -->
+		<div class="container"><!--centers the content on a fixed width-->
+            <div class="row">
+		    	<div class="col-xs-10 col-sm-10 col-md-10 col-lg-10">
+			    <center><img src="images/banner.png" class="img-responsive"></center>
+ 				</div>
+			</div><!--centers the image-->
+            <br />
+		</div>	<!-- container -->
+
+
+		<div id="viz">
+
+		</div>
+		<div id="inputs-container-container">
+				<!-- <div class="col-sm-4 col-md-4 col-lg-4">
+						<label for="eventSel">Event</label>
+						<select class="form-control" id="eventSel" name="eventSel">
+						</select>
+					</div>
+
+				<div class="col-sm-4 col-md-4 col-lg-4">
+						<label for="timeSel">Time</label>
+						<select class="form-control" id="timeSel" name="timeSel">
+						</select>
+				</div> -->
+
+
+				<!-- <div class="input-container">
+				<div class="legend">Time</div>
+				<textarea rows="10" cols="5" id="timesdata" style="background-color: rgb(255, 255, 255);"> -->
+				<div class="input-container">
+					<div class="legend">Time</div>
+					 <textarea  rows="10" cols="5" id="timeSel" name="timeSel" style="vertical-align:middle"></textarea>
+				</div>
+
+				<div class="input-container">
+					<div class="legend">Event</div>
+					  <textarea rows="10" cols="5" id="eventSel" name="eventSel" style="vertical-align:middle"></textarea>
+			  </div>
+				<!-- <div class="input-container">
+					<div class="legend">Group</div>
+					  <textarea rows="10" cols="5" id="eventSel" name="eventSel" style="vertical-align:middle"></textarea>
+			  </div> -->
+				<div id="instructions">
+				    <ul>
+				        <li>Time values must be supplied.</li>
+				        <li>Event flags need not be supplied. Acceptable flags: 1 for event, 0 for censoring. If not supplied, all time points are events (i.e. no censoring).</li>
+				        <li>Groups need not be supplied.</li>
+				        <li>Hover over a survival curve to get its group name and to see its confidence interval.</li>
+				    </ul>
+				</div>
+
+		 </div>
+
+
+
+
+
+      <script type="text/javascript" src="js/array-utils.js" charset="utf-8"></script>
+      <script type="text/javascript" src="js/kaplan-meier.js" charset="utf-8"></script>
+      <script type="text/javascript" src="js/test.js"></script>
+			<script type="text/javascript">
+			// Functions to highlight or dehighlight textareas.
+			function highlightTimesData(){$("#timeSel"    ).css({'background-color' : 'rgba(255, 0, 0, 0.4)'});}
+			function highlightEventData(){$("#eventSel").css({'background-color' : 'rgba(255, 0, 0, 0.4)'});}
+			function dehighlight(){
+			    $("#timeSel"    ).css({'background-color' : 'rgba(255, 255, 255, 1)'});
+			    $("#eventSel").css({'background-color' : 'rgba(255, 255, 255, 1)'});
+			    // $("#groupdata"    ).css({'background-color' : 'rgba(255, 255, 255, 1)'});
+			}
+			d3.selection.prototype.moveToFront = function(){
+			    return this.each(function(){
+			        this.parentNode.appendChild(this);
+			    });
+			};
+
+
+
+
+			</script>
+
+
+
+
+
+
+
+
+
+	</body>
+</html>
