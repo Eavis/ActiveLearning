@@ -141,6 +141,12 @@ void Learner::Cleanup(void)
 	m_samples.clear();
 	m_classNames.clear();
 
+	m_ignoreIdx.clear();
+	m_ignoreId.clear();
+	m_ignoreLabel.clear();
+	m_ignoreIter.clear();
+	m_ignoreSlide.clear();
+
 	if( m_dataset ) {
 		delete m_dataset;
 		m_dataset = NULL;
@@ -252,6 +258,8 @@ bool Learner::ParseCommand(const int sock, const char *data, int size)
 				result = FinalizeSession(sock, root);
 			} else if( strncmp(command, CMD_APPLY, strlen(CMD_APPLY)) == 0 ) {
 				result = ApplyClassifier(sock, root);
+			} else if( strncmp(command, CMD_SURVIVAL, strlen(CMD_SURVIVAL)) == 0 ) {
+				result = Survival(sock, root);
 			} else if( strncmp(command, CMD_VISUAL, strlen(CMD_VISUAL)) == 0 ) {
 				result = Visualize(sock, root);
 			} else if( strncmp(command, CMD_VIEWLOAD, strlen(CMD_VIEWLOAD)) == 0) {
@@ -626,7 +634,7 @@ bool Learner::RestoreSessionData(MData &trainingSet)
 		memcpy(m_xCentroid, floatData, numObjs * sizeof(float));
 
 		floatData = trainingSet.GetXClickList();
-		// Training sets created with earlier versions of VALS don't have clicks
+		// Training sets created with earlier versions of HistomicsML don't have clicks
 		if( floatData == NULL ) {
 			// Use centroids for click location if not present.
 			floatData = trainingSet.GetXCentroidList();
@@ -724,8 +732,7 @@ bool Learner::Review(const int sock, json_t *obj)
 	}
 
 	if( result ) {
-		// We just return an array of the nuclei database id's, label and iteration when added
-		//
+
 		for(int i = 0; i < m_samples.size(); i++) {
 
 			sample = json_object();
@@ -739,6 +746,34 @@ bool Learner::Review(const int sock, json_t *obj)
 			json_object_set(sample, "id", json_integer(m_ids[i]));
 			json_object_set(sample, "label", json_integer(m_labels[i]));
 			json_object_set(sample, "iteration", json_integer(m_sampleIter[i]));
+			json_object_set(sample, "slide", json_string(m_dataset->GetSlide(idx)));
+			json_object_set(sample, "centX", json_real(m_dataset->GetXCentroid(idx)));
+			json_object_set(sample, "centY", json_real(m_dataset->GetYCentroid(idx)));
+			json_object_set(sample, "boundary", json_string(""));
+			json_object_set(sample, "maxX", json_integer(0));
+			json_object_set(sample, "maxY", json_integer(0));
+
+			json_array_append(sampleArray, sample);
+			json_decref(sample);
+		}
+
+		for(int i = 0; i < m_ignoreIdx.size(); i++) {
+
+			sample = json_object();
+			if( sample == NULL ) {
+				gLogger->LogMsg(EvtLogger::Evt_ERROR, "Unable to create sample JSON object");
+				result = false;
+				break;
+			}
+
+			int idx = m_ignoreIdx[i];
+			int id = m_ignoreId[i];
+			int label = m_ignoreLabel[i];
+			int iter = m_ignoreIter[i];
+
+			json_object_set(sample, "id", json_integer(id));
+			json_object_set(sample, "label", json_integer(label));
+			json_object_set(sample, "iteration", json_integer(iter));
 			json_object_set(sample, "slide", json_string(m_dataset->GetSlide(idx)));
 			json_object_set(sample, "centX", json_real(m_dataset->GetXCentroid(idx)));
 			json_object_set(sample, "centY", json_real(m_dataset->GetYCentroid(idx)));
@@ -777,7 +812,7 @@ bool Learner::SaveReview(const int sock, json_t *obj)
 {
 	bool	result = true;
 	json_t 	*jsonObj = NULL, *value = NULL, *sampleArray = NULL;
-
+	int count = 0;
 	value = json_object_get(obj, "uid");
 	const char *uid = json_string_value(value);
 	result = IsUIDValid(uid);
@@ -792,7 +827,7 @@ bool Learner::SaveReview(const int sock, json_t *obj)
 
 	if( result ) {
 		size_t	index;
-		int id, label, count = 0;
+		int id, label, sample_id;
 
 		json_array_foreach(sampleArray, index, jsonObj) {
 
@@ -802,14 +837,101 @@ bool Learner::SaveReview(const int sock, json_t *obj)
 			value = json_object_get(jsonObj, "label");
 			label = json_integer_value(value);
 
+			// Look for the sample to update.
+			// in the case of m_samples only
 			for(int i = 0; i < m_samples.size(); i++) {
-
 				if( id == m_ids[i] ) {
+					count++;
 					m_labels[i] = label;
 				}
 			}
+
+			// in the case of m_ignores only
+			for(int i = 0; i < m_ignoreIdx.size(); i++) {
+				int igr_id = m_ignoreId[i];
+				if( id == igr_id ) {
+					count++;
+					m_ignoreLabel[i] = label;
+				}
+			}
+
 		}
 	}
+
+	// Send result back to client
+	//
+	json_t 	*root = json_object();
+	size_t 	bytesWritten;
+
+	if( root != NULL ) {
+		if( result ) {
+			json_object_set(root, "status", json_string("PASS"));
+			json_object_set(root, "updated", json_integer(count));
+		} else {
+			json_object_set(root, "status", json_string("FAIL"));
+		}
+
+		char *jsonObj = json_dumps(root, 0);
+		bytesWritten = ::write(sock, jsonObj, strlen(jsonObj));
+
+		if( bytesWritten != strlen(jsonObj) )
+			result = false;
+
+		json_decref(root);
+		free(jsonObj);
+
+	}
+
+	return result;
+}
+
+bool Learner::RemoveIgnored(void)
+{
+	bool 	result = true;
+	int 	newLength = m_samples.size(), i = 0;
+
+	while( i < newLength ) {
+
+		if( m_labels[i] == 0 ) {
+
+			int idx;
+		 	char *slide = m_dataset->GetSlide(m_slideIdx[i]);
+			idx = m_dataset->FindItem(m_xCentroid[i], m_yCentroid[i], slide);
+
+			m_ignoreIdx.push_back(idx);
+			m_ignoreId.push_back(m_ids[i]);
+			m_ignoreLabel.push_back(m_labels[i]);
+			m_ignoreIter.push_back(m_sampleIter[i]);
+			m_ignoreSlide.push_back(slide);
+
+			newLength--;
+			while( m_labels[newLength] == 0 && newLength > i ) {
+				// Make sure the sample we are swapping is not to be
+				// ignored
+				newLength--;
+			}
+
+			// No need to swap if last samples
+			if( i < newLength ) {
+				m_labels[i] = m_labels[newLength];
+				m_ids[i] = m_ids[newLength];
+				m_sampleIter[i] = m_sampleIter[newLength];
+				memcpy(m_trainSet[i], m_trainSet[newLength], m_dataset->GetDims());
+				m_slideIdx[i] = m_slideIdx[newLength];
+				m_xCentroid[i] = m_xCentroid[newLength];
+				m_yCentroid[i] = m_yCentroid[newLength];
+			}
+		}
+
+		i++;
+	}
+
+	// Remove the extra samples from the end of the vector, the Finalize code uses
+	// the sample vector's length for the number of samples to save.
+	int diff = m_samples.size() - newLength;
+
+	m_samples.erase(m_samples.end()-(diff+1), m_samples.end()-1);
+
 	return result;
 }
 
@@ -925,6 +1047,7 @@ bool Learner::Select(const int sock, json_t *obj)
 		json_decref(root);
 		free(jsonObj);
 	}
+
 	return result;
 }
 
@@ -1028,8 +1151,14 @@ bool Learner::Submit(const int sock, json_t *obj)
 			// Get the dataset index for this object
 			idx = m_dataset->FindItem(centX, centY, slide);
 
+
 			if( label == 0 ) {
-				m_ignoreSet.insert(idx);
+				//m_ignoreSet.insert(idx);
+				m_ignoreIdx.push_back(idx);
+				m_ignoreId.push_back(id);
+				m_ignoreLabel.push_back(0);
+				m_ignoreIter.push_back(iter);
+				m_ignoreSlide.push_back(slide);
 
 			} else {
 
@@ -1054,6 +1183,7 @@ bool Learner::Submit(const int sock, json_t *obj)
 					}
 				}
 			}
+
 			// Something is wrong, stop processing
 			if( !result )
 				break;
@@ -1065,6 +1195,50 @@ bool Learner::Submit(const int sock, json_t *obj)
 		// Indicate training set has been updated and heatmaps need to be rebuilt
 		m_heatmapReload = true;
 	}
+
+	// update the training set if the label is not zero in ignores
+	if( result ) {
+		for(int i = 0; i < m_ignoreIdx.size(); i++) {
+
+			int idx = m_ignoreIdx[i];
+			int id = m_ignoreId[i];
+			int label = m_ignoreLabel[i];
+			int iter = m_ignoreIter[i];
+
+			if( label != 0 ) {
+
+				result = UpdateBuffers(1);
+
+				if( result ) {
+
+					int	pos = m_samples.size();
+
+					if( idx != -1 ) {
+						m_labels[pos] = label;
+						m_ids[pos] = id;
+						m_sampleIter[pos] = iter;
+						m_slideIdx[pos] = m_dataset->GetSlideIdx(m_ignoreSlide[i].c_str());
+						m_xCentroid[pos] = m_dataset->GetXCentroid(idx);
+						m_yCentroid[pos] = m_dataset->GetYCentroid(idx);
+						result = m_dataset->GetSample(idx, m_trainSet[pos]);
+						m_samples.push_back(idx);
+					} else {
+						gLogger->LogMsg(EvtLogger::Evt_ERROR, "Unable to find item: %d", id);
+						result = false;
+					}
+				}
+				m_ignoreIdx.erase(m_ignoreIdx.begin() + i);
+				m_ignoreId.erase(m_ignoreId.begin() + i);
+				m_ignoreLabel.erase(m_ignoreLabel.begin() + i);
+				m_ignoreIter.erase(m_ignoreIter.begin() + i);
+				m_ignoreSlide.erase(m_ignoreSlide.begin() + i);
+
+			}
+		}
+	}
+
+	// remove ignores before updating the training set
+	result = RemoveIgnored();
 
 	// If all's well, train the classifier with the updated training set
 	//
@@ -1184,6 +1358,9 @@ bool Learner::FinalizeSession(const int sock, json_t *obj)
 		free(jsonStr);
 	}
 	json_decref(root);
+
+	// Remove ignores before saving the training set
+	result = RemoveIgnored();
 
 	// Save the training set
 	//
@@ -1988,6 +2165,8 @@ bool Learner::GenHeatmap(const int sock, json_t *obj)
 			struct stat buffer;
 			int		statResp = stat(fqfn.c_str(), &buffer);
 
+			gLogger->LogMsg(EvtLogger::Evt_INFO, "GenHeatMap Start");
+
 			// Check if heatmap needs to be generated
 			if( m_heatmapReload || statResp != 0 ) {
 
@@ -2113,6 +2292,15 @@ bool Learner::GenAllHeatmaps(const int sock, json_t *obj)
 			}
 		}
 
+		// To identify the most recent scores,
+		// Classify all objects for heatmap generation
+		//
+		float 	**ptr = m_dataset->GetData();
+		int	dims = m_dataset->GetDims();
+		result = m_classifier->ScoreBatch(ptr, m_dataset->GetNumObjs(), dims, m_scores);
+		if( result == false ) {
+			gLogger->LogMsg(EvtLogger::Evt_ERROR, "(Learner::GenAllheatmaps) Classification failed");
+		}
 
 		if( result ) {
 			size_t index, numSlides = json_array_size(slides);
@@ -2340,4 +2528,143 @@ void Learner::HeatmapWorker(float *slideScores, float *centX, float *centY, int 
 
 	// Return the median raw score, min and max should be blurred
 	*uncertMedian = scoreVec[scoreVec.size() / 2];
+}
+
+bool Learner::Survival(const int sock, json_t *obj)
+{
+	bool result = true;
+	json_t	*value = NULL, *slideData = NULL;
+
+
+	value = json_object_get(obj, "uid");
+	const char *uid = json_string_value(value);
+	result = IsUIDValid(uid);
+
+	if( result) {
+		double	start, timing = gLogger->WallTime();
+
+		if( result ) {
+			slideData = json_object_get(obj, "slides");
+			if( slideData == NULL ) {
+				gLogger->LogMsg(EvtLogger::Evt_ERROR, "(Learner::Survival) Unable to decode slide data");
+				result = false;
+			}
+		}
+
+		json_t	*slides = NULL;
+
+		if( result ) {
+
+			slides = json_object_get(slideData, "slides");
+			if( !json_is_array(slides) ) {
+				gLogger->LogMsg(EvtLogger::Evt_ERROR, "(Learner::Survival) Unable to decode slide name array");
+				result = false;
+			}
+		}
+
+		// To identify the most recent scores,
+		// Classify all objects for heatmap generation
+		//
+		float 	**ptr = m_dataset->GetData();
+		int	dims = m_dataset->GetDims();
+		result = m_classifier->ScoreBatch(ptr, m_dataset->GetNumObjs(), dims, m_scores);
+		if( result == false ) {
+			gLogger->LogMsg(EvtLogger::Evt_ERROR, "(Learner::Survival) Classification failed");
+		}
+
+		if( result ) {
+			size_t index, numSlides = json_array_size(slides);
+			const char 	*slideName = NULL;
+			int			width, height;
+			vector<std::thread> workers;
+
+
+			if( !m_statList.empty() ) {
+				for(int i = 0; i < m_statList.size(); i++) {
+					delete m_statList[i];
+				}
+				m_statList.clear();
+			}
+
+			json_array_foreach(slides, index, value) {
+
+				slideName = json_string_value(value);
+				if( slideName == NULL ) {
+					gLogger->LogMsg(EvtLogger::Evt_ERROR, "(Learner::Survival) Unable to decode slide name");
+					result = false;
+					break;
+				}
+
+				int slideObjs, offset = m_dataset->GetSlideOffset(slideName, slideObjs);
+				float	*slideScores = &m_scores[offset];
+				SlideStat   *stats = new SlideStat;
+
+				int posCnt = 0;
+				for(int obj = 0; obj < slideObjs; obj++) {
+					if (slideScores[obj] > 0){
+						posCnt = posCnt + 1;
+					}
+				}
+
+				stats->slide = slideName;
+				stats->alphaIndex = index;
+				stats->posNum = posCnt;
+				stats->totalNum = slideObjs;
+				m_statList.push_back(stats);
+
+			}
+			//sort(m_statList.begin(), m_statList.end(), SortFunc);
+			gLogger->LogMsg(EvtLogger::Evt_INFO, "Survival took %f", gLogger->WallTime() - timing);
+
+		}
+	} else {
+		gLogger->LogMsg(EvtLogger::Evt_INFO, "Training set not updated since heatmaps were last generated");
+	}
+
+
+
+	// TODO - Move the following to its own function
+	//
+	json_t	*slideList = NULL, *item = NULL;
+	if( result ) {
+		slideList = json_array();
+		if( slideList == NULL ) {
+			gLogger->LogMsg(EvtLogger::Evt_ERROR, "(Learner::Survival) Unable to create JSON Array object");
+			result = false;
+		}
+	}
+
+	vector<SlideStat*>::iterator	it;
+
+	if( result ) {
+
+		for(it = m_statList.begin(); it != m_statList.end(); it++) {
+			item = json_object();
+			if( item == NULL ) {
+				gLogger->LogMsg(EvtLogger::Evt_ERROR, "(Learner::Survival) Unable to create JSON object");
+				result = false;
+				break;
+			}
+
+			json_object_set(item, "slide", json_string((*it)->slide.c_str()));
+			json_object_set(item, "index", json_integer((*it)->alphaIndex));
+			json_object_set(item, "posNum", json_integer((*it)->posNum));
+			json_object_set(item, "totalNum", json_integer((*it)->totalNum));
+
+			json_array_append(slideList, item);
+			json_decref(item);
+		}
+
+
+		char *jsonObj = json_dumps(slideList, 0);
+		size_t  bytesWritten = :: write(sock, jsonObj, strlen(jsonObj));
+
+		if( bytesWritten != strlen(jsonObj) )
+			result = false;
+
+		json_decref(slideList);
+		free(jsonObj);
+	}
+
+	return result;
 }

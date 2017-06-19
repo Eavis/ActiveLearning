@@ -54,7 +54,7 @@
 #define CMD_PICKEND		"pickerSave"
 #define CMD_PICKREVIEW		"pickerReview"
 #define CMD_PICKREVIEWSAVE		"pickerReviewSave"
-
+#define CMD_PICKRELOAD	"pickerReload"
 #define CMD_VIEWLOAD	"viewerLoad"
 
 #define CMD_HEATMAP		"heatMap"
@@ -64,5 +64,7 @@
 
 #define CMD_REVIEW		"review"
 #define CMD_REVIEWSAVE		"reviewSave"
+
+#define CMD_SURVIVAL		"survival"
 
 #endif /* SRC_COMMANDS_H_ */
