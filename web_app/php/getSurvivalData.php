@@ -45,15 +45,8 @@
 
 	//write_log("INFO","json results fro python code: ".$results['test']);
 
-	// This will contain: array('status' => 'Yes!')
-	//var_dump($resultData);
 	$clinicalData = array("scores" => $results );
 
 	echo json_encode($clinicalData);
-
-
-	//$info = array("slides" => $output);
-
-	//echo json_encode($info);
 
 ?>
