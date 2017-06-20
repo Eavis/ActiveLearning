@@ -70,7 +70,20 @@ $(function() {
 
 });
 
+function getSurvivalData() {
 
+	// Get the information for the current dataset
+	$.ajax({
+		type: "POST",
+		url: "php/getSurvivalData.php",
+		data: { slideSet: slideSet,
+			test: curDataset},
+		dataType: "json",
+		success: function(data) {
+				var result = data['scores'];
+		}
+	});
+}
 
 function getObjectCnt() {
 
@@ -88,11 +101,13 @@ function getObjectCnt() {
 
 			slideSet = data;
 
-			for( var item in slideSet['scores'] ) {
-				var slide = String(slideSet['scores'][index]['slide']);
-				var posNum = slideSet['scores'][index]['posNum'];
-				var totalNum = slideSet['scores'][index]['totalNum'];
+			for( var i in slideSet['scores'] ) {
+				var slide = String(slideSet['scores'][i]['slide']);
+				var posNum = slideSet['scores'][i]['posNum'];
+				var totalNum = slideSet['scores'][i]['totalNum'];
 			}
+
+			getSurvivalData();
 
 			// Hide progress dialog
 			$('#progDiag').modal('hide');
