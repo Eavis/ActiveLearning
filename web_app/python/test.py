@@ -1,13 +1,25 @@
 #!/usr/bin/python
-import sys
+import sys, csv
 import h5py
 import json
 
 # get the percentage of positive objects
-percent_pos = sys.argv[1]
+fpath = sys.argv[1]
+
 dict_clinicaldata = {}
-dict_clinicaldata['test'] = percent_pos
+slidename = []
+pos = []
+
+with open(fpath, 'rb') as csvfile:
+     reader = csv.reader(csvfile, delimiter=',')
+     idx = 0
+     for row in reader:
+         slidename.append(row[0])
+         pos.append(row[1])
+
+
 # Generate data to send to PHP
-results = {'test': dict_clinicaldata['test']}
+results = {'slidename': slidename, 'score':pos}
+#results = {'score': dict_clinicaldata['test']}
 jsonData = json.dumps(results, ensure_ascii = 'False')
 print jsonData

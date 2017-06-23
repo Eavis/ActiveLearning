@@ -34,19 +34,35 @@
 	*/
 
 	$slides = $_POST['slideSet'];
-  $posfloat = $slides['scores'][0]['posNum']/$slides['scores'][0]['totalNum'];
-	$posPernt = round($posfloat * 100 );
+  //$posfloat = $slides['scores'][0]['posNum']/$slides['scores'][0]['totalNum'];
+	//$posPernt = round($posfloat * 100 );
+	$list = array();
 
-	// Execute the python script with the JSON data
-	$results = shell_exec('python ../python/test.py '.$posPernt);
+	foreach ($slides['scores'] as $v) {
+		$posfloat = $v['posNum']/$v['totalNum'];
+		$posPernt = round($posfloat * 100 );
+		$slidelist = array();
+		array_push($slidelist, $v['slide']);
+		array_push($slidelist, $posPernt);
+		array_push($list, $slidelist);
+	}
 
-  // Decode the result
-  $results = json_decode($results);
+		$fpath = '../trainingsets/tmp/tmp.csv';
+		$fp = fopen($fpath, 'w');
 
-	//write_log("INFO","json results fro python code: ".$results['test']);
+		foreach ($list as $fields) {
+		    fputcsv($fp, $fields);
+		}
 
-	$clinicalData = array("scores" => $results );
+		fclose($fp);
 
-	echo json_encode($clinicalData);
+
+		// Execute the python script with the JSON data
+		$results = shell_exec('python ../python/test.py '.$fpath);
+	  // Decode the result
+	  $results = json_decode($results);
+		//write_log("INFO","json results fro python code: ".$results['test']);
+		$clinicalData = array("scores" => $results );
+		echo json_encode($clinicalData);
 
 ?>
