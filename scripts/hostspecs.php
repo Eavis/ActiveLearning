@@ -10,6 +10,6 @@
 	#
 	#	IIP server 
 	#
-	$IIPServer = "http://170.140.61.157/fcgi-bin/iipsrv.fcgi?";			
+	$IIPServer = "http://localhost/fcgi-bin/iipsrv.fcgi?";			
 ?>
 
