@@ -40,7 +40,7 @@
 		<script src="js/openseadragon-viewerinputhook.min.js"></script>
 		<script src="js/knockout-3.1.0.js"></script>
 		<script src="js/bootstrap.min.js"></script>
-
+		<script src="js/Sortable.js"></script>
 
 		<link rel="stylesheet" href="css/style.css"/>
 		<link rel="stylesheet" href="css/bootstrap.min.css"/>
@@ -51,7 +51,7 @@
 
 		<nav class="navbar navbar-default" role="navigation">
 			<div class="navbar-header">
-				<div class="navbar-brand">VALS</div>
+				<div class="navbar-brand">HistomicsML</div>
 			</div>
 
 			<div>
@@ -61,7 +61,6 @@
 					<li class="active"><a href="review.html">Review</a></li>
 					<li><a href="viewer.html">Viewer</a></li>
 					<li><a href="heatmaps.html">Heatmaps</a></li>
-					<li><a href="visualize.html" id="nav_visualize">Visualize</a></li>
 				</ul>
 			</div>
 		</nav>
@@ -78,12 +77,7 @@
 				</div>
 			</div>
 
-			<div class="row" style='overflow:auto; width:1200px;height:350px;'>
-				<div class="col-sm-6 col-md-6 col-lg-6", id="pos">
-				</div>
-				<div class="col-sm-1 col-md-1 col-lg-1", id='cen'></div>
-				<div class="col-sm-6 col-md-6 col-lg-6", id="neg">
-				</div>
+			<div class="row" id="slides" style='overflow:auto; width:1500px;height:400px;'>
 			</div>
 
 			<div class="row">

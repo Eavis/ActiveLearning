@@ -177,7 +177,6 @@ $(function() {
 			if( uid === null ) {
 				// No active session, don;t allow navigation to select & visualize
 				$('#nav_select').hide();
-				$('#nav_visualize').hide();
 				$('#nav_heatmaps').hide();
 				// the review section also should be hided
 				$('#nav_review').hide();
@@ -202,7 +201,7 @@ $(function() {
 	// Set the update handlers for the selectors
 	$("#slide_sel").change(updateSlide);
 	$("#dataset_sel").change(updateDataset);
-	$("#classifier_sel").change(updateClassifier);
+	//$("#classifier_sel").change(updateClassifier);
 
 	// Set update handler for the heatmap radio buttons
 	$('input[name=heatmapOption]').change(updateHeatmap);
@@ -382,6 +381,15 @@ function updateClassifierList() {
 
 	classSel.empty();
 
+	if( uid === null ) {
+		classSel.append(new Option('----------------', 'none'));
+	} else {
+		classSel.append(new Option('Current', 'current'));
+	}
+
+	updateClassifier();
+
+	/*
 	// First selection should be none
 	classSel.append(new Option('----------------', 'none'));
 
@@ -403,6 +411,7 @@ function updateClassifierList() {
 	} else {
 		classSel.append(new Option('Current', 'current'));
 	}
+	*/
 }
 
 
@@ -462,7 +471,8 @@ function updateClassifier() {
 
 	curClassifier = class_sel.options[class_sel.selectedIndex].value;
 
- 	if( class_sel.selectedIndex != 0 ) {
+ 	//if( class_sel.selectedIndex != 0 ) {
+	if( curClassifier != "none" ) {
 
 		if( uid === null || classifierSession ) {
 			// No active session, start a classification session
@@ -543,18 +553,9 @@ function updateClassifier() {
 //
 function updateHeatmap() {
 
-	var ele = document.getElementById('heatmapImg');
+	heatmapLoaded = false;
+	updateSeg();
 
-	if( $('#heatmapUncertain').is(':checked') ) {
-		ele.setAttribute("xlink:href", "heatmaps/" + uid + "/" + curSlide + ".jpg");
-		document.getElementById('heatMin').innerHTML = uncertMin.toFixed(2);
-		document.getElementById('heatMax').innerHTML = uncertMax.toFixed(2);
-	} else {
-
-		ele.setAttribute("xlink:href", "heatmaps/" + uid + "/" + curSlide + "_class.jpg");
-		document.getElementById('heatMin').innerHTML = classMin.toFixed(2);
-		document.getElementById('heatMax').innerHTML = classMax.toFixed(2);
-	}
 }
 
 
@@ -697,6 +698,10 @@ function updateSeg() {
 					}
 				}
     	});
+
+			// set heatmapLoaded to false after retraining
+			heatmapLoaded = false;
+
 	} else {
 
 		// Only display heatmap for active sessions
@@ -741,11 +746,12 @@ function updateSeg() {
 					classMax = data.classMax;
 
 					if( $('#heatmapUncertain').is(':checked') ) {
-						ele.setAttributeNS(xlinkns, "xlink:href", "heatmaps/"+uid+"/"+data.uncertFilename);
+						// heatmap should be reloaded with different time after updating heatmap image on local directory
+						ele.setAttributeNS(xlinkns, "href", "heatmaps/"+uid+"/"+data.uncertFilename+"?v="+(new Date()).getTime());
 						document.getElementById('heatMin').innerHTML = data.uncertMin.toFixed(2);
 						document.getElementById('heatMax').innerHTML = data.uncertMax.toFixed(2);
 					} else {
-						ele.setAttributeNS(xlinkns, "xlink:href", "heatmaps/"+uid+"/"+data.classFilename);
+						ele.setAttributeNS(xlinkns, "href", "heatmaps/"+uid+"/"+data.classFilename+"?v="+(new Date()).getTime());
 						document.getElementById('heatMin').innerHTML = data.classMin.toFixed(2);
 						document.getElementById('heatMax').innerHTML = data.classMax.toFixed(2);
 					}
@@ -853,9 +859,10 @@ function nucleiSelect() {
 							if (undo){
 								// call undoBoundColrs to undo the color
 								undoBoundColors(obj);
-								var index = fixes['samples'].indexOf(obj);
-								if (index > -1) {
-								    fixes['samples'].splice(index, 1);
+								for( cell in fixes['samples'] ) {
+									if (fixes['samples'][cell]['id'] == obj['id']){
+										fixes['samples'].splice(cell, 1);
+									}
 								}
 								statusObj.samplesToFix(statusObj.samplesToFix()-1);
 								undo = false;
@@ -883,6 +890,12 @@ function retrain() {
 	// Set iteration to -1 to indicate these are hand-picked
 	fixes['iteration'] = -1;
 
+	// Display the progress dialog...
+	$('#progDiag').modal('show');
+
+	var delay = 2000;
+
+
 	$.ajax({
 		type: "POST",
 		url: "php/submitSamples.php",
@@ -898,6 +911,12 @@ function retrain() {
 
 			// Update classification results.
 			updateSeg();
+
+			setTimeout(function() {
+				// Hide progress dialog
+				$('#progDiag').modal('hide');
+		        }, delay);
+
 		}
 	});
 }

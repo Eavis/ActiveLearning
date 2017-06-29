@@ -1,4 +1,5 @@
 <?php
+
 //
 //	Copyright (c) 2014-2016, Emory University
 //	All rights reserved.
@@ -9,7 +10,7 @@
 //	1. Redistributions of source code must retain the above copyright notice, this list of
 //	conditions and the following disclaimer.
 //
-//	2. Redistributions in binary form must reproduce the above copyright notice, this list
+//	2. Redistributions in binary form must reproduce the above copyright notice, this list 
 // 	of conditions and the following disclaimer in the documentation and/or other materials
 //	provided with the distribution.
 //
@@ -17,7 +18,7 @@
 //	EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
 //	OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
 //	SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-//	INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+//	INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
 //	TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
 //	BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 //	CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
@@ -25,28 +26,35 @@
 //	DAMAGE.
 //
 //
-	require 'serverComm.php';
-	require 'hostspecs.php';		// Defines $host and $port
-	require '../db/logging.php';
 
-	session_start();
+	require 'logging.php';		// Also includes connect.php
+	require '../php/hostspecs.php';
 
-	$samples = json_decode($_POST['samples']);
+	$dataset = $_POST['dataset'];
+	
+	$sql = 'SELECT t.name, t.fileName FROM test_sets t '
+			.'JOIN datasets d ON t.dataset_id=d.id WHERE d.name="'.$dataset.'"';
 
-	$submit_data =  array( "command" => "pickerReviewSave",
-	  			 	       "uid" => $_SESSION['uid'],
-	  			 	       "samples" => $samples);
+	$dbConn = guestConnect();
+	
+	if( $result = mysqli_query($dbConn, $sql) ) {
 
-	$submit_data = json_encode($submit_data, JSON_NUMERIC_CHECK);
-
-	$socket = connect_server($host, $port);
-	if( $socket === false ) {
-		log_error("[savePickerReview] Unable to connect to learning server");
-	} else {
-		$response = command_server($submit_data, $socket);
-		if( $response === false ) {
-			log_error("[savePickerReview] Unable to get response from learning server");
+		$testSetNames = array();
+		$fileNames = array();
+		while( $array = mysqli_fetch_row($result) ) {
+			$testSetNames[] = $array[0];
+			$fileNames[] = $array[1];
 		}
+		
+		$testSetData = array("testSets" => $testSetNames, "fileNames" => $fileNames);
+		mysqli_free_result($result);
+
+	} else {
+		log_error("Unable to retrieve training sets from database");
+		exit();
 	}
-	echo $response;
+	mysqli_close($dbConn);
+
+	echo json_encode($testSetData);
 ?>
+

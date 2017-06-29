@@ -25,28 +25,58 @@
 //	DAMAGE.
 //
 //
-	require 'serverComm.php';
-	require 'hostspecs.php';		// Defines $host and $port
-	require '../db/logging.php';
 
-	session_start();
 
-	$samples = json_decode($_POST['samples']);
 
-	$submit_data =  array( "command" => "pickerReviewSave",
-	  			 	       "uid" => $_SESSION['uid'],
-	  			 	       "samples" => $samples);
+function connect_server($host, $port) 
+{
 
-	$submit_data = json_encode($submit_data, JSON_NUMERIC_CHECK);
+	$prog = true;
 
-	$socket = connect_server($host, $port);
+	$addr = gethostbyname($host);
+	set_time_limit(0);
+	
+	$socket = socket_create(AF_INET, SOCK_STREAM, 0);
 	if( $socket === false ) {
-		log_error("[savePickerReview] Unable to connect to learning server");
-	} else {
-		$response = command_server($submit_data, $socket);
-		if( $response === false ) {
-			log_error("[savePickerReview] Unable to get response from learning server");
+		log_error("socket_create failed: ". socket_strerror(socket_last_error()));
+		$prog = false;
+	}
+	
+	if( $prog ) {
+		$result = socket_connect($socket, $addr, $port);
+		if( !$result ) {
+			log_error("socket_connect failed: ".socket_strerror(socket_last_error()));
+			$prog = false;
 		}
 	}
-	echo $response;
+
+	if( $prog === false) {
+		if( $socket != false ) {
+			socket_close($socket);
+		}
+		$socket = false;
+	}
+	return $socket;
+}
+
+
+
+
+
+function command_server($cmd, $socket)
+{
+	
+	socket_write($socket, $cmd, strlen($cmd));
+	$response = socket_read($socket, 8192);
+	$additional = socket_read($socket, 8192);
+
+	while( $additional != false ) {
+		$response = $response.$additional;
+		$additional = socket_read($socket, 8192);
+	}
+	socket_close($socket);
+
+	return $response;
+}
+
 ?>
