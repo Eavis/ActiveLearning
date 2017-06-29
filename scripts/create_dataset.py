@@ -65,6 +65,7 @@ except mysql.Error, e:
 #	Get the id for the dataset
 #
 cursor.execute("SELECT id from datasets where name=%s", (dataset))
+#cursor.execute("select id from datasets where name=%s", (dataset,))
 row = cursor.fetchone()
 datasetId = row[0]
 
@@ -75,6 +76,8 @@ for slide in slideList:
 
 	slide = slide.rstrip('\n')
 	cursor.execute("select id from slides where name=%s", (slide))
+	#cursor.execute("select id from slides where name=%s", (slide,))
+
 	row = cursor.fetchone()
 
 	try:
