@@ -95,3 +95,19 @@ button{
 	cursor: pointer;
 	cursor: hand;
 }
+
+table{
+    width:1000px;
+    padding:20px,20px,20px,20px;
+}
+
+
+th,td{
+    text-align: center;
+}
+tr.even{
+    background-color:cornsilk;
+}
+tr.hover{
+    background-color:lemonchiffon;
+}
