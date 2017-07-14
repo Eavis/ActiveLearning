@@ -8,10 +8,10 @@
       <div id="inputs" class="clearfix">
         <input type="file" id="files" name="files[]" multiple="">
       </div>
-        <div >
-        <select name = "varaibles", size = "15", multiple = "multiple",id = "selectElementId">
-            </select>
-        </div>
+
+        
+        <select id="selectElementId" size = "15" multiple = "multiple"></select>
+        
       <script src="jquery.min.js"></script>
       <script src="jquery.csv.js"></script>
       <script>
@@ -34,7 +34,7 @@
               var var_name = Object.keys(obj1);
               var var_len = var_name.length;
               var select = document.getElementById('selectElementId');
-              for (var i = 0; i<=var_len; i++){
+              for (var i = 0; i< var_len; i++){
                     var opt = document.createElement('option');
                     opt.value = i;
                     opt.innerHTML = var_name[i];
