@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Event Listener</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+   
+  </head>
+  <body>
+      
+        <div id="log">
+      </div>
+      <script>
+        var log = document.getElementById('log'),i = '', out = [];
+        for (i in window) {
+          if ( /^on/.test(i)) { out[out.length] = i; }
+        }
+        log.innerHTML = out.join(', ');
+      document.addEventListener('click', logeventinfo, false);
+      document.addEventListener('keypress', logeventinfo, false);
+      function logeventinfo (ev) {
+          log.innerHTML = '';
+          out = '<ul>';
+          for (var i in ev) {
+            if (typeof ev[i] === 'function' || i === i.toUpperCase()) {
+              continue;
+            }
+            out += '<li><span>'+i+'</span>: '+ev[i]+'</li>';
+          }
+          log.innerHTML += out + '</ul>';
+        }
+      </script>
+  </body>
+  </html>

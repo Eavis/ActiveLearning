@@ -22,20 +22,20 @@ df.drop('race-Is-american indian or alaska native_Clinical', axis=1, inplace=Tru
 #
 #     print(df[column])
 
-for i in range(2,df.shape[1]):
-	df.current = df.iloc[:,[0,1,i]]
-	cf = CoxPHFitter()
-	cf.fit(df.current, 'Survival', event_col='Censored')
-	cf.print_summary()
+# for i in range(2,df.shape[1]):
+# 	df.current = df.iloc[:,[0,1,i]]
+# 	cf = CoxPHFitter()
+# 	cf.fit(df.current, 'Survival', event_col='Censored')
+# 	cf.print_summary()
 # import pdb; pdb.set_trace()
 
 
 
 
-#
-# cf = CoxPHFitter()
-# cf.fit(df, 'Survival', event_col='Censored')
-# cf.print_summary()  # access the results using cf.summary
+
+cf = CoxPHFitter()
+cf.fit(df, 'Survival', event_col='Censored')
+cf.print_summary()  # access the results using cf.summary
 
 # scores = k_fold_cross_validation(cf, df, 'Survival', event_col='Censored', k=5)
 # print (scores)

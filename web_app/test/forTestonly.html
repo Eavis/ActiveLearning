@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Test Data Transformation between js and php</title>
+    </head>
+    <body>
+      <div id="inputs" class="clearfix">
+        <input type="file" id="files" name="files[]" multiple="">
+      </div>
+        <div >
+        <select name = "varaibles", size = "15", multiple = "multiple",id = "selectElementId">
+            </select>
+        </div>
+      <script src="jquery.min.js"></script>
+      <script src="jquery.csv.js"></script>
+      <script>
+        $(document).ready(function() {
+          if (window.File && window.FileReader && window.FileList && window.Blob) {
+            $('#files').bind('change', handleFileSelect);
+          }
+        });
+          
+        
+        function handleFileSelect(evt) {
+          var files = evt.target.files; // FileList object
+          var file = files[0];
+          var reader = new FileReader();
+          reader.readAsText(file);
+          reader.onload = function(event) {
+              var csv = event.target.result;
+              var data = $.csv.toObjects(csv);
+              var obj1 = data[0];
+              var var_name = Object.keys(obj1);
+              var var_len = var_name.length;
+              var select = document.getElementById('selectElementId');
+              for (var i = 0; i<=var_len; i++){
+                    var opt = document.createElement('option');
+                    opt.value = i;
+                    opt.innerHTML = var_name[i];
+                    select.appendChild(opt);
+                }
+          } 
+          var output = ''
+                  output += '<span style="font-weight:bold;">' + escape(file.name) + '</span><br />\n';
+                  output += ' - FileType: ' + (file.type || 'n/a') + '<br />\n';
+                  output += ' - FileSize: ' + file.size + ' bytes<br />\n';
+                  output += ' - LastModified: ' + (file.lastModifiedDate ? file.lastModifiedDate.toLocaleDateString() : 'n/a') + '<br />\n';
+          $('#list').append(output);
+
+        }
+          function myFunction() {
+//            document.getElementById("var_result").innerHTML = " "; // Click on the checkbox
+               
+        }
+      </script>
+
+
+
+    </body>
+</html>
