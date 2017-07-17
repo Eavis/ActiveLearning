@@ -40,38 +40,10 @@
             </ul>
         </div>
       </div>
-      <script>
-        $(document).ready(function() {
-          if (window.File && window.FileReader && window.FileList && window.Blob) {
-            $('#files').bind('change', handleFileSelect);
-          }
-        });
-        function handleFileSelect(evt) {
-          var files = evt.target.files; // FileList object
-          var file = files[0];
-          var reader = new FileReader();
-          reader.readAsText(file);
-          reader.onload = function(event) {
-              var csv = event.target.result;
-              var data = $.csv.toObjects(csv);
-              var obj1 = data[0];
-              var var_name = Object.keys(obj1);
-              var var_len = var_name.length;
-              var ul = document.getElementById("list");
-              for (var i = 0; i< var_len; i++) {
-                var li = document.createElement("li");
-//                li.setAttribute('class', 'list-group-item'); 
-                  li.className = "list-group-item";
-                li.appendChild(document.createTextNode(var_name[i]));
-                ul.appendChild(li);
-              }
-          }
-       }
-      </script>
-     <script src="js/forTestonly.js"></script>
-     
 
+      
 
+        <script src="js/forTestonly.js"></script>
 
     </body>
 </html>
