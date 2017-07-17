@@ -40,6 +40,13 @@
         <link rel="stylesheet" media="screen" href="css/bootstrap.min.css"/>
         <link rel="stylesheet" media="screen" href="css/style.css"/>
 				<link rel="stylesheet" href="css/main.css" type="text/css">
+        <link rel="stylesheet" href="css/forTestonly.css"/>
+        <!-- <link rel="stylesheet" href="css/bootstrap.min.css"/> -->
+        <!-- <script src="js/jquery-3.2.1.min.js"></script> -->
+        <script src="js/jquery.csv.js"></script>
+        <!-- <script src="js/bootstrap.min.js"></script> -->
+        <link rel="stylesheet" href="css/forTestonly.css"/>
+
 	</head>
 	<body>
 		<nav class="navbar navbar-default" role="navigation">
@@ -57,7 +64,29 @@
 				</ul>
 			</div>
 		</nav>
+    <div id="inputs" class="clearfix">
+            <input type="file" id="files" name="files[]" multiple="">
+          </div>
+        <div class="row pick-list">
+            <div class="col-xs-4">
+                <ul class="list-group source" id ="list">
+                </ul>
+            </div>
+            <div class="col-xs-2 v-center">
+                <button title="Send to list 2" class="btn btn-default center-block add" disabled="disabled">
+                    <i class="glyphicon glyphicon-chevron-right"></i>
 
+                </button>
+                <button title="Send to list 1" class="btn btn-default center-block remove" disabled="disabled">
+                    <i class="glyphicon glyphicon-chevron-left"></i>
+                </button>
+            </div>
+            <div class="col-xs-4">
+                <ul class="list-group destination" id = "des_list">
+
+                </ul>
+            </div>
+          </div>
 
 
 
@@ -455,7 +484,80 @@
 				</table>
 				</div>
                 </div>
+								<script>
+						            $(document).ready(function() {
+						              if (window.File && window.FileReader && window.FileList && window.Blob) {
+						                $('#files').bind('change', handleFileSelect);
+						              }
+						            });
+						            function handleFileSelect(evt) {
+						              var files = evt.target.files; // FileList object
+						              var file = files[0];
+						              var reader = new FileReader();
+						              reader.readAsText(file);
+						              reader.onload = function(event) {
+						                  var csv = event.target.result;
+						                  var data = $.csv.toObjects(csv);
+						                  var obj1 = data[0];
+						                  var var_name = Object.keys(obj1);
+						                  var var_len = var_name.length;
+						                  var ul = document.getElementById("list");
+						                  for (var i = 0; i< var_len; i++) {
+						                    var li = document.createElement("li");
+						    //                li.setAttribute('class', 'list-group-item');
+						                      li.className = "list-group-item";
+						                    li.appendChild(document.createTextNode(var_name[i]));
+						                    ul.appendChild(li);
+						                  }
+						            }
+						           }
+						    //       $(document).on('click', '.list-group-item', function(e) {
+						               $(document).on('click', ' .list-group-item', function(e) {
+						       // add active class at list-item by click
+						             $(this).parent().find('.list-group-item').removeClass('active');
+						             $(this).addClass('active');
 
+						       // make add(>) button disabled untill selecting one
+						             var source = $(this).parents('.pick-list').find('.source').children('.active');
+						                   if(source.length > 0) {
+						                       $(this).attr('disabled',false);
+						                       $('.add').attr('disabled',false);
+						                   } else {
+						                       $(this).attr('disabled',true);
+						                       $('.add').attr('disabled',true);
+						                   };
+						             // make remove(<) button disabled untill selecting one
+						             var des = $(this).parents('.pick-list').find('.destination').children('.active');
+						                   if(des.length > 0) {
+						                       $(this).attr('disabled',false);
+						                       $('.remove').attr('disabled',false);
+						                   } else {
+						                       $(this).attr('disabled',true);
+						                       $('.remove').attr('disabled',true);
+						                   };
+						            });
+						            $('.add').click(function(){
+						                var item = $(this).parents('.pick-list').find('.source').children('.active');
+						                // Move item from source to destination when one item is active/selected
+						                if(item.length > 0) {
+						                    $('.source .list-group-item.active').appendTo('.list-group.destination');
+						                    $('.add').attr('disabled',true);
+						                    $('.destination .list-group-item.active').removeClass('active');
+						                }
+						            });
+						            $('.remove').click(function(){
+						                var item = $(this).parents('.pick-list').find('.destination').children('.active');
+						                // Move item from destination to source when one item is active/selected
+						                if(item.length > 0) {
+						                    $('.destination .list-group-item.active').appendTo('.source');
+						                    $('.remove').attr('disabled',true);
+						                    $('.source .list-group-item.active').removeClass('active');
+						                }
+						            });
+
+
+
+						          </script>
 
 
 
